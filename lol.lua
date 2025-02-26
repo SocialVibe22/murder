@@ -1,4 +1,4 @@
--- Murder Mystery 2 Script with Built-in Nova UI Library
+-- Murder Mystery 2 Script with Built-in UI Library
 -- Created by Master
 
 -- Services
@@ -17,46 +17,48 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 local camera = workspace.CurrentCamera
 
 -- Remove existing GUI
-local existingGui = player.PlayerGui:FindFirstChild("NovaGUI")
+local existingGui = player.PlayerGui:FindFirstChild("MM2GUI")
 if existingGui then existingGui:Destroy() end
 
--- Create Nova UI Library
-local Nova = {}
-Nova.Font = Enum.Font.Gotham
-Nova.FontBold = Enum.Font.GothamBold
-Nova.CurrentTheme = {
-    Primary = Color3.fromRGB(30, 30, 45),
-    Secondary = Color3.fromRGB(40, 40, 60),
-    Tertiary = Color3.fromRGB(50, 50, 75),
+-- Create Custom UI Library
+local Library = {}
+Library.Flags = {}
+Library.Theme = {
+    Background = Color3.fromRGB(25, 25, 35),
+    Section = Color3.fromRGB(30, 30, 40),
+    Element = Color3.fromRGB(35, 35, 45),
+    Text = Color3.fromRGB(255, 255, 255),
     Accent = Color3.fromRGB(100, 100, 255),
-    Text = Color3.fromRGB(255, 255, 255)
+    DarkAccent = Color3.fromRGB(80, 80, 200),
+    Red = Color3.fromRGB(255, 80, 80),
+    Green = Color3.fromRGB(80, 255, 80),
+    Blue = Color3.fromRGB(80, 80, 255)
 }
 
 -- Create GUI
-local NovaGui = Instance.new("ScreenGui")
-NovaGui.Name = "NovaGUI"
-NovaGui.ResetOnSpawn = false
-NovaGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-NovaGui.Parent = player.PlayerGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MM2GUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = player.PlayerGui
 
 -- Helper Functions
-local function createCorner(instance, radius, topOnly, rightOnly)
+local function createCorner(instance, radius)
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 10)
-    
-    if topOnly then
-        corner.CornerRadius = UDim.new(0, 0)
-    end
-    
-    if rightOnly then
-        corner.CornerRadius = UDim.new(0, 0)
-    end
-    
+    corner.CornerRadius = UDim.new(0, radius or 6)
     corner.Parent = instance
     return corner
 end
 
-local function createShadow(instance, size, transparency, offset)
+local function createStroke(instance, color, thickness)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or Library.Theme.Accent
+    stroke.Thickness = thickness or 1
+    stroke.Parent = instance
+    return stroke
+end
+
+local function createShadow(instance, size, transparency)
     local shadow = Instance.new("ImageLabel")
     shadow.Name = "Shadow"
     shadow.Size = UDim2.new(1, size or 20, 1, size or 20)
@@ -72,11 +74,11 @@ local function createShadow(instance, size, transparency, offset)
     return shadow
 end
 
-local function tween(instance, info, properties)
+local function tween(instance, properties, duration, style, direction)
     local tweenInfo = TweenInfo.new(
-        info.Time or 0.5,
-        info.EasingStyle or Enum.EasingStyle.Quad,
-        info.EasingDirection or Enum.EasingDirection.Out
+        duration or 0.3,
+        style or Enum.EasingStyle.Quad,
+        direction or Enum.EasingDirection.Out
     )
     
     local tween = TweenService:Create(instance, tweenInfo, properties)
@@ -84,139 +86,127 @@ local function tween(instance, info, properties)
     return tween
 end
 
--- Nova UI Library Functions
-function Nova:Init(windowOptions)
-    self.Tabs = {}
+-- Create Window
+function Library:CreateWindow(options)
+    options = options or {}
     
-    -- Create main window
-    local MainWindow = Instance.new("Frame")
-    MainWindow.Name = "MainWindow"
-    MainWindow.Size = UDim2.new(0, windowOptions.Size and windowOptions.Size.X or 650, 0, windowOptions.Size and windowOptions.Size.Y or 450)
-    MainWindow.Position = UDim2.new(0.5, -(windowOptions.Size and windowOptions.Size.X or 650)/2, 0.5, -(windowOptions.Size and windowOptions.Size.Y or 450)/2)
-    MainWindow.BackgroundColor3 = Nova.CurrentTheme.Primary
-    MainWindow.BorderSizePixel = 0
-    MainWindow.Parent = NovaGui
+    local Window = {}
+    Window.Tabs = {}
+    Window.TabsContainer = {}
+    Window.TabsContent = {}
+    Window.CurrentTab = nil
     
-    createCorner(MainWindow)
-    createShadow(MainWindow, 15, 0.5, 2)
+    -- Main Frame
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, options.Width or 650, 0, options.Height or 450)
+    MainFrame.Position = UDim2.new(0.5, -(options.Width or 650)/2, 0.5, -(options.Height or 450)/2)
+    MainFrame.BackgroundColor3 = Library.Theme.Background
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
     
-    -- Create title bar
+    createCorner(MainFrame, 8)
+    createShadow(MainFrame, 30, 0.5)
+    
+    -- Title Bar
     local TitleBar = Instance.new("Frame")
     TitleBar.Name = "TitleBar"
     TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Nova.CurrentTheme.Secondary
+    TitleBar.BackgroundColor3 = Library.Theme.Section
     TitleBar.BorderSizePixel = 0
-    TitleBar.Parent = MainWindow
+    TitleBar.Parent = MainFrame
     
-    createCorner(TitleBar, 10, true)
+    createCorner(TitleBar, 8)
     
-    local TitleBarLine = Instance.new("Frame")
-    TitleBarLine.Name = "TitleBarLine"
-    TitleBarLine.Size = UDim2.new(1, 0, 0, 1)
-    TitleBarLine.Position = UDim2.new(0, 0, 1, 0)
-    TitleBarLine.BackgroundColor3 = Nova.CurrentTheme.Accent
-    TitleBarLine.BorderSizePixel = 0
-    TitleBarLine.ZIndex = 2
-    TitleBarLine.Parent = TitleBar
+    local TitleBarCover = Instance.new("Frame")
+    TitleBarCover.Name = "TitleBarCover"
+    TitleBarCover.Size = UDim2.new(1, 0, 0.5, 0)
+    TitleBarCover.Position = UDim2.new(0, 0, 0.5, 0)
+    TitleBarCover.BackgroundColor3 = Library.Theme.Section
+    TitleBarCover.BorderSizePixel = 0
+    TitleBarCover.Parent = TitleBar
     
     local Title = Instance.new("TextLabel")
     Title.Name = "Title"
     Title.Size = UDim2.new(1, -40, 1, 0)
     Title.Position = UDim2.new(0, 15, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = windowOptions.Name or "Nova UI Library"
-    Title.TextColor3 = Nova.CurrentTheme.Text
+    Title.Text = options.Title or "MM2 Script"
+    Title.TextColor3 = Library.Theme.Text
     Title.TextSize = 18
-    Title.Font = Nova.FontBold
+    Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
     
-    -- Create close button
+    -- Close Button
     local CloseButton = Instance.new("TextButton")
     CloseButton.Name = "CloseButton"
     CloseButton.Size = UDim2.new(0, 24, 0, 24)
     CloseButton.Position = UDim2.new(1, -30, 0.5, -12)
-    CloseButton.BackgroundTransparency = 1
-    CloseButton.Text = ""
+    CloseButton.BackgroundColor3 = Library.Theme.Red
+    CloseButton.Text = "×"
+    CloseButton.TextColor3 = Library.Theme.Text
+    CloseButton.TextSize = 20
+    CloseButton.Font = Enum.Font.GothamBold
     CloseButton.Parent = TitleBar
     
-    local CloseIcon = Instance.new("ImageLabel")
-    CloseIcon.Name = "CloseIcon"
-    CloseIcon.Size = UDim2.new(1, 0, 1, 0)
-    CloseIcon.BackgroundTransparency = 1
-    CloseIcon.Image = "rbxassetid://6031094678"
-    CloseIcon.ImageColor3 = Nova.CurrentTheme.Text
-    CloseIcon.Parent = CloseButton
+    createCorner(CloseButton, 4)
     
-    -- Create minimize button
-    local MinimizeButton = Instance.new("TextButton")
-    MinimizeButton.Name = "MinimizeButton"
-    MinimizeButton.Size = UDim2.new(0, 24, 0, 24)
-    MinimizeButton.Position = UDim2.new(1, -60, 0.5, -12)
-    MinimizeButton.BackgroundTransparency = 1
-    MinimizeButton.Text = ""
-    MinimizeButton.Parent = TitleBar
+    CloseButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
     
-    local MinimizeIcon = Instance.new("ImageLabel")
-    MinimizeIcon.Name = "MinimizeIcon"
-    MinimizeIcon.Size = UDim2.new(1, 0, 1, 0)
-    MinimizeIcon.BackgroundTransparency = 1
-    MinimizeIcon.Image = "rbxassetid://6031090990"
-    MinimizeIcon.ImageColor3 = Nova.CurrentTheme.Text
-    MinimizeIcon.Parent = MinimizeButton
-    
-    -- Create content container
+    -- Content Container
     local ContentContainer = Instance.new("Frame")
     ContentContainer.Name = "ContentContainer"
     ContentContainer.Size = UDim2.new(1, 0, 1, -40)
     ContentContainer.Position = UDim2.new(0, 0, 0, 40)
     ContentContainer.BackgroundTransparency = 1
-    ContentContainer.Parent = MainWindow
+    ContentContainer.Parent = MainFrame
     
-    -- Create tab container
+    -- Tab Container
     local TabContainer = Instance.new("Frame")
     TabContainer.Name = "TabContainer"
     TabContainer.Size = UDim2.new(0, 150, 1, 0)
-    TabContainer.BackgroundColor3 = Nova.CurrentTheme.Secondary
+    TabContainer.BackgroundColor3 = Library.Theme.Section
     TabContainer.BorderSizePixel = 0
     TabContainer.Parent = ContentContainer
     
-    createCorner(TabContainer, 10, false, true)
+    createCorner(TabContainer, 8)
     
-    local TabContainerLine = Instance.new("Frame")
-    TabContainerLine.Name = "TabContainerLine"
-    TabContainerLine.Size = UDim2.new(0, 1, 1, 0)
-    TabContainerLine.Position = UDim2.new(1, 0, 0, 0)
-    TabContainerLine.BackgroundColor3 = Nova.CurrentTheme.Accent
-    TabContainerLine.BorderSizePixel = 0
-    TabContainerLine.ZIndex = 2
-    TabContainerLine.Parent = TabContainer
+    local TabContainerCover = Instance.new("Frame")
+    TabContainerCover.Name = "TabContainerCover"
+    TabContainerCover.Size = UDim2.new(0.5, 0, 1, 0)
+    TabContainerCover.Position = UDim2.new(0.5, 0, 0, 0)
+    TabContainerCover.BackgroundColor3 = Library.Theme.Section
+    TabContainerCover.BorderSizePixel = 0
+    TabContainerCover.Parent = TabContainer
     
-    local TabList = Instance.new("ScrollingFrame")
-    TabList.Name = "TabList"
-    TabList.Size = UDim2.new(1, 0, 1, 0)
-    TabList.BackgroundTransparency = 1
-    TabList.BorderSizePixel = 0
-    TabList.ScrollBarThickness = 0
-    TabList.ScrollingEnabled = true
-    TabList.Parent = TabContainer
+    local TabScroll = Instance.new("ScrollingFrame")
+    TabScroll.Name = "TabScroll"
+    TabScroll.Size = UDim2.new(1, 0, 1, 0)
+    TabScroll.BackgroundTransparency = 1
+    TabScroll.BorderSizePixel = 0
+    TabScroll.ScrollBarThickness = 0
+    TabScroll.ScrollingEnabled = true
+    TabScroll.Parent = TabContainer
     
-    local TabListLayout = Instance.new("UIListLayout")
-    TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TabListLayout.Padding = UDim.new(0, 5)
-    TabListLayout.Parent = TabList
+    local TabList = Instance.new("UIListLayout")
+    TabList.SortOrder = Enum.SortOrder.LayoutOrder
+    TabList.Padding = UDim.new(0, 5)
+    TabList.Parent = TabScroll
     
-    local TabListPadding = Instance.new("UIPadding")
-    TabListPadding.PaddingTop = UDim.new(0, 10)
-    TabListPadding.PaddingLeft = UDim.new(0, 10)
-    TabListPadding.PaddingRight = UDim.new(0, 10)
-    TabListPadding.Parent = TabList
+    local TabPadding = Instance.new("UIPadding")
+    TabPadding.PaddingTop = UDim.new(0, 10)
+    TabPadding.PaddingLeft = UDim.new(0, 10)
+    TabPadding.PaddingRight = UDim.new(0, 10)
+    TabPadding.Parent = TabScroll
     
-    -- Create tab content container
+    -- Tab Content Container
     local TabContentContainer = Instance.new("Frame")
     TabContentContainer.Name = "TabContentContainer"
-    TabContentContainer.Size = UDim2.new(1, -150, 1, 0)
-    TabContentContainer.Position = UDim2.new(0, 150, 0, 0)
+    TabContentContainer.Size = UDim2.new(1, -160, 1, -10)
+    TabContentContainer.Position = UDim2.new(0, 155, 0, 5)
     TabContentContainer.BackgroundTransparency = 1
     TabContentContainer.Parent = ContentContainer
     
@@ -230,7 +220,7 @@ function Nova:Init(windowOptions)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = MainWindow.Position
+            startPos = MainFrame.Position
             
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
@@ -249,622 +239,708 @@ function Nova:Init(windowOptions)
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            MainWindow.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     
-    -- Close button functionality
-    CloseButton.MouseButton1Click:Connect(function()
-        tween(MainWindow, {Time = 0.5}, {Position = UDim2.new(0.5, -(windowOptions.Size and windowOptions.Size.X or 650)/2, 1.5, -(windowOptions.Size and windowOptions.Size.Y or 450)/2)})
-        wait(0.5)
-        NovaGui:Destroy()
+    -- Update tab list canvas size
+    TabList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        TabScroll.CanvasSize = UDim2.new(0, 0, 0, TabList.AbsoluteContentSize.Y + 10)
     end)
     
-    -- Minimize button functionality
-    local minimized = false
-    MinimizeButton.MouseButton1Click:Connect(function()
-        minimized = not minimized
+    -- Create Tab function
+    function Window:CreateTab(name, icon)
+        local Tab = {}
+        Tab.Name = name
+        Tab.Sections = {}
         
-        if minimized then
-            tween(MainWindow, {Time = 0.5}, {Size = UDim2.new(0, windowOptions.Size and windowOptions.Size.X or 650, 0, 40)})
-        else
-            tween(MainWindow, {Time = 0.5}, {Size = UDim2.new(0, windowOptions.Size and windowOptions.Size.X or 650, 0, windowOptions.Size and windowOptions.Size.Y or 450)})
-        end
-    end)
-    
-    -- Store references
-    self.MainWindow = MainWindow
-    self.TabList = TabList
-    self.TabContentContainer = TabContentContainer
-    
-    -- Animate window
-    MainWindow.Position = UDim2.new(0.5, -(windowOptions.Size and windowOptions.Size.X or 650)/2, 1.5, -(windowOptions.Size and windowOptions.Size.Y or 450)/2)
-    tween(MainWindow, {Time = 0.5}, {Position = UDim2.new(0.5, -(windowOptions.Size and windowOptions.Size.X or 650)/2, 0.5, -(windowOptions.Size and windowOptions.Size.Y or 450)/2)})
-    
-    return self
-end
-
-function Nova:CreateTab(title, icon)
-    -- Create tab button
-    local TabButton = Instance.new("TextButton")
-    TabButton.Name = "Tab_" .. title
-    TabButton.Size = UDim2.new(1, 0, 0, 40)
-    TabButton.BackgroundColor3 = Nova.CurrentTheme.Tertiary
-    TabButton.BorderSizePixel = 0
-    TabButton.Text = ""
-    TabButton.AutoButtonColor = false
-    TabButton.Parent = self.TabList
-    
-    createCorner(TabButton, 8)
-    
-    local TabIcon
-    if icon then
-        TabIcon = Instance.new("ImageLabel")
-        TabIcon.Name = "TabIcon"
-        TabIcon.Size = UDim2.new(0, 20, 0, 20)
-        TabIcon.Position = UDim2.new(0, 10, 0.5, -10)
-        TabIcon.BackgroundTransparency = 1
-        TabIcon.Image = icon
-        TabIcon.ImageColor3 = Nova.CurrentTheme.Text
-        TabIcon.Parent = TabButton
-    end
-    
-    local TabTitle = Instance.new("TextLabel")
-    TabTitle.Name = "TabTitle"
-    TabTitle.Size = UDim2.new(1, icon and -40 or -20, 1, 0)
-    TabTitle.Position = UDim2.new(0, icon and 40 or 10, 0, 0)
-    TabTitle.BackgroundTransparency = 1
-    TabTitle.Text = title
-    TabTitle.TextColor3 = Nova.CurrentTheme.Text
-    TabTitle.TextSize = 14
-    TabTitle.Font = Nova.Font
-    TabTitle.TextXAlignment = Enum.TextXAlignment.Left
-    TabTitle.Parent = TabButton
-    
-    -- Create tab content
-    local TabContent = Instance.new("ScrollingFrame")
-    TabContent.Name = "TabContent_" .. title
-    TabContent.Size = UDim2.new(1, 0, 1, 0)
-    TabContent.BackgroundTransparency = 1
-    TabContent.BorderSizePixel = 0
-    TabContent.ScrollBarThickness = 4
-    TabContent.ScrollBarImageColor3 = Nova.CurrentTheme.Accent
-    TabContent.Visible = false
-    TabContent.Parent = self.TabContentContainer
-    
-    local TabContentLayout = Instance.new("UIListLayout")
-    TabContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    TabContentLayout.Padding = UDim.new(0, 10)
-    TabContentLayout.Parent = TabContent
-    
-    local TabContentPadding = Instance.new("UIPadding")
-    TabContentPadding.PaddingTop = UDim.new(0, 10)
-    TabContentPadding.PaddingLeft = UDim.new(0, 10)
-    TabContentPadding.PaddingRight = UDim.new(0, 10)
-    TabContentPadding.PaddingBottom = UDim.new(0, 10)
-    TabContentPadding.Parent = TabContent
-    
-    -- Tab functionality
-    local tab = {
-        Button = TabButton,
-        Content = TabContent,
-        Sections = {}
-    }
-    
-    -- Select tab function
-    local function selectTab()
-        -- Deselect all tabs
-        for _, otherTab in ipairs(self.Tabs) do
-            tween(otherTab.Button, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Tertiary})
-            otherTab.Content.Visible = false
+        -- Tab Button
+        local TabButton = Instance.new("TextButton")
+        TabButton.Name = name .. "Button"
+        TabButton.Size = UDim2.new(1, 0, 0, 36)
+        TabButton.BackgroundColor3 = Library.Theme.Element
+        TabButton.BorderSizePixel = 0
+        TabButton.Text = ""
+        TabButton.AutoButtonColor = false
+        TabButton.Parent = TabScroll
+        
+        createCorner(TabButton, 6)
+        
+        local TabIcon
+        if icon then
+            TabIcon = Instance.new("ImageLabel")
+            TabIcon.Name = "Icon"
+            TabIcon.Size = UDim2.new(0, 20, 0, 20)
+            TabIcon.Position = UDim2.new(0, 10, 0.5, -10)
+            TabIcon.BackgroundTransparency = 1
+            TabIcon.Image = icon
+            TabIcon.ImageColor3 = Library.Theme.Text
+            TabIcon.Parent = TabButton
         end
         
-        -- Select this tab
-        tween(TabButton, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Accent})
-        TabContent.Visible = true
+        local TabText = Instance.new("TextLabel")
+        TabText.Name = "Text"
+        TabText.Size = UDim2.new(1, icon and -40 or -20, 1, 0)
+        TabText.Position = UDim2.new(0, icon and 40 or 10, 0, 0)
+        TabText.BackgroundTransparency = 1
+        TabText.Text = name
+        TabText.TextColor3 = Library.Theme.Text
+        TabText.TextSize = 14
+        TabText.Font = Enum.Font.GothamSemibold
+        TabText.TextXAlignment = Enum.TextXAlignment.Left
+        TabText.Parent = TabButton
         
-        -- Update icon color
-        if TabIcon then
-            TabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-        end
+        -- Tab Content
+        local TabContent = Instance.new("ScrollingFrame")
+        TabContent.Name = name .. "Content"
+        TabContent.Size = UDim2.new(1, 0, 1, 0)
+        TabContent.BackgroundTransparency = 1
+        TabContent.BorderSizePixel = 0
+        TabContent.ScrollBarThickness = 4
+        TabContent.ScrollBarImageColor3 = Library.Theme.Accent
+        TabContent.Visible = false
+        TabContent.Parent = TabContentContainer
         
-        -- Update text color
-        TabTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-    
-    TabButton.MouseButton1Click:Connect(selectTab)
-    
-    -- Add hover effect
-    TabButton.MouseEnter:Connect(function()
-        if TabContent.Visible then return end
-        tween(TabButton, {Time = 0.2}, {BackgroundColor3 = Color3.fromRGB(
-            Nova.CurrentTheme.Tertiary.R * 1.1,
-            Nova.CurrentTheme.Tertiary.G * 1.1,
-            Nova.CurrentTheme.Tertiary.B * 1.1
-        )})
-    end)
-    
-    TabButton.MouseLeave:Connect(function()
-        if TabContent.Visible then return end
-        tween(TabButton, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Tertiary})
-    end)
-    
-    -- Create section function
-    function tab:CreateSection(title)
-        local Section = Instance.new("Frame")
-        Section.Name = "Section_" .. title
-        Section.Size = UDim2.new(1, -20, 0, 40)
-        Section.BackgroundColor3 = Nova.CurrentTheme.Secondary
-        Section.BorderSizePixel = 0
-        Section.AutomaticSize = Enum.AutomaticSize.Y
-        Section.Parent = TabContent
+        local ContentList = Instance.new("UIListLayout")
+        ContentList.SortOrder = Enum.SortOrder.LayoutOrder
+        ContentList.Padding = UDim.new(0, 10)
+        ContentList.Parent = TabContent
         
-        createCorner(Section)
-        createShadow(Section, 10, 0.5, 2)
+        local ContentPadding = Instance.new("UIPadding")
+        ContentPadding.PaddingTop = UDim.new(0, 5)
+        ContentPadding.PaddingLeft = UDim.new(0, 5)
+        ContentPadding.PaddingRight = UDim.new(0, 5)
+        ContentPadding.PaddingBottom = UDim.new(0, 5)
+        ContentPadding.Parent = TabContent
         
-        local SectionTitle = Instance.new("TextLabel")
-        SectionTitle.Name = "SectionTitle"
-        SectionTitle.Size = UDim2.new(1, -20, 0, 30)
-        SectionTitle.Position = UDim2.new(0, 10, 0, 5)
-        SectionTitle.BackgroundTransparency = 1
-        SectionTitle.Text = title
-        SectionTitle.TextColor3 = Nova.CurrentTheme.Text
-        SectionTitle.TextSize = 16
-        SectionTitle.Font = Nova.FontBold
-        SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
-        SectionTitle.Parent = Section
-        
-        local SectionDivider = Instance.new("Frame")
-        SectionDivider.Name = "SectionDivider"
-        SectionDivider.Size = UDim2.new(1, -20, 0, 1)
-        SectionDivider.Position = UDim2.new(0, 10, 0, 35)
-        SectionDivider.BackgroundColor3 = Nova.CurrentTheme.Accent
-        SectionDivider.BorderSizePixel = 0
-        SectionDivider.Parent = Section
-        
-        local SectionContainer = Instance.new("Frame")
-        SectionContainer.Name = "SectionContainer"
-        SectionContainer.Size = UDim2.new(1, 0, 0, 0)
-        SectionContainer.Position = UDim2.new(0, 0, 0, 45)
-        SectionContainer.BackgroundTransparency = 1
-        SectionContainer.AutomaticSize = Enum.AutomaticSize.Y
-        SectionContainer.Parent = Section
-        
-        local SectionLayout = Instance.new("UIListLayout")
-        SectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        SectionLayout.Padding = UDim.new(0, 10)
-        SectionLayout.Parent = SectionContainer
-        
-        local SectionPadding = Instance.new("UIPadding")
-        SectionPadding.PaddingTop = UDim.new(0, 5)
-        SectionPadding.PaddingLeft = UDim.new(0, 10)
-        SectionPadding.PaddingRight = UDim.new(0, 10)
-        SectionPadding.PaddingBottom = UDim.new(0, 10)
-        SectionPadding.Parent = SectionContainer
-        
-        -- Update canvas size
-        SectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Section.Size = UDim2.new(1, -20, 0, SectionLayout.AbsoluteContentSize.Y + 55)
-            TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContentLayout.AbsoluteContentSize.Y + 20)
+        -- Update content canvas size
+        ContentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            TabContent.CanvasSize = UDim2.new(0, 0, 0, ContentList.AbsoluteContentSize.Y + 10)
         end)
         
-        -- Create section object
-        local section = {
-            Container = SectionContainer
-        }
-        
-        -- Add toggle function
-        function section:AddToggle(options)
-            local toggleValue = options.Default or false
-            
-            local ToggleContainer = Instance.new("Frame")
-            ToggleContainer.Name = "Toggle_" .. options.Name
-            ToggleContainer.Size = UDim2.new(1, 0, 0, 30)
-            ToggleContainer.BackgroundTransparency = 1
-            ToggleContainer.Parent = self.Container
-            
-            local ToggleLabel = Instance.new("TextLabel")
-            ToggleLabel.Name = "ToggleLabel"
-            ToggleLabel.Size = UDim2.new(1, -50, 1, 0)
-            ToggleLabel.BackgroundTransparency = 1
-            ToggleLabel.Text = options.Name
-            ToggleLabel.TextColor3 = Nova.CurrentTheme.Text
-            ToggleLabel.TextSize = 14
-            ToggleLabel.Font = Nova.Font
-            ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            ToggleLabel.Parent = ToggleContainer
-            
-            local ToggleButton = Instance.new("TextButton")
-            ToggleButton.Name = "ToggleButton"
-            ToggleButton.Size = UDim2.new(0, 40, 0, 20)
-            ToggleButton.Position = UDim2.new(1, -40, 0.5, -10)
-            ToggleButton.BackgroundColor3 = toggleValue and Nova.CurrentTheme.Accent or Color3.fromRGB(60, 60, 90)
-            ToggleButton.BorderSizePixel = 0
-            ToggleButton.Text = ""
-            ToggleButton.AutoButtonColor = false
-            ToggleButton.Parent = ToggleContainer
-            
-            createCorner(ToggleButton, 10)
-            
-            local ToggleCircle = Instance.new("Frame")
-            ToggleCircle.Name = "ToggleCircle"
-            ToggleCircle.Size = UDim2.new(0, 16, 0, 16)
-            ToggleCircle.Position = UDim2.new(toggleValue and 0.6 or 0.1, 0, 0.5, -8)
-            ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            ToggleCircle.BorderSizePixel = 0
-            ToggleCircle.Parent = ToggleButton
-            
-            createCorner(ToggleCircle, 8)
-            
-            ToggleButton.MouseButton1Click:Connect(function()
-                toggleValue = not toggleValue
-                tween(ToggleButton, {Time = 0.2}, {BackgroundColor3 = toggleValue and Nova.CurrentTheme.Accent or Color3.fromRGB(60, 60, 90)})
-                tween(ToggleCircle, {Time = 0.2}, {Position = UDim2.new(toggleValue and 0.6 or 0.1, 0, 0.5, -8)})
-                options.Callback(toggleValue)
-            end)
-            
-            -- Return toggle object with value property
-            local toggle = {
-                Value = toggleValue,
-                Instance = ToggleContainer
-            }
-            
-            return toggle
-        end
-        
-        -- Add button function
-        function section:AddButton(options)
-            local ButtonContainer = Instance.new("Frame")
-            ButtonContainer.Name = "Button_" .. options.Name
-            ButtonContainer.Size = UDim2.new(1, 0, 0, 30)
-            ButtonContainer.BackgroundTransparency = 1
-            ButtonContainer.Parent = self.Container
-            
-            local Button = Instance.new("TextButton")
-            Button.Name = "Button"
-            Button.Size = UDim2.new(1, 0, 1, 0)
-            Button.BackgroundColor3 = Nova.CurrentTheme.Tertiary
-            Button.BorderSizePixel = 0
-            Button.Text = options.Name
-            Button.TextColor3 = Nova.CurrentTheme.Text
-            Button.TextSize = 14
-            Button.Font = Nova.Font
-            Button.AutoButtonColor = false
-            Button.Parent = ButtonContainer
-            
-            createCorner(Button, 6)
-            
-            -- Add hover effect
-            Button.MouseEnter:Connect(function()
-                tween(Button, {Time = 0.2}, {BackgroundColor3 = Color3.fromRGB(
-                    Nova.CurrentTheme.Tertiary.R * 1.1,
-                    Nova.CurrentTheme.Tertiary.G * 1.1,
-                    Nova.CurrentTheme.Tertiary.B * 1.1
-                )})
-            end)
-            
-            Button.MouseLeave:Connect(function()
-                tween(Button, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Tertiary})
-            end)
-            
-            Button.MouseButton1Click:Connect(function()
-                tween(Button, {Time = 0.1}, {BackgroundColor3 = Nova.CurrentTheme.Accent})
-                options.Callback()
-                wait(0.1)
-                tween(Button, {Time = 0.1}, {BackgroundColor3 = Nova.CurrentTheme.Tertiary})
-            end)
-            
-            return Button
-        end
-        
-        -- Add slider function
-        function section:AddSlider(options)
-            local sliderValue = options.Default or options.Min
-            
-            local SliderContainer = Instance.new("Frame")
-            SliderContainer.Name = "Slider_" .. options.Name
-            SliderContainer.Size = UDim2.new(1, 0, 0, 50)
-            SliderContainer.BackgroundTransparency = 1
-            SliderContainer.Parent = self.Container
-            
-            local SliderLabel = Instance.new("TextLabel")
-            SliderLabel.Name = "SliderLabel"
-            SliderLabel.Size = UDim2.new(1, 0, 0, 20)
-            SliderLabel.BackgroundTransparency = 1
-            SliderLabel.Text = options.Name .. ": " .. sliderValue .. (options.Suffix or "")
-            SliderLabel.TextColor3 = Nova.CurrentTheme.Text
-            SliderLabel.TextSize = 14
-            SliderLabel.Font = Nova.Font
-            SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-            SliderLabel.Parent = SliderContainer
-            
-            local SliderBackground = Instance.new("Frame")
-            SliderBackground.Name = "SliderBackground"
-            SliderBackground.Size = UDim2.new(1, 0, 0, 10)
-            SliderBackground.Position = UDim2.new(0, 0, 0.5, 0)
-            SliderBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 90)
-            SliderBackground.BorderSizePixel = 0
-            SliderBackground.Parent = SliderContainer
-            
-            createCorner(SliderBackground, 5)
-            
-            local SliderFill = Instance.new("Frame")
-            SliderFill.Name = "SliderFill"
-            SliderFill.Size = UDim2.new((sliderValue - options.Min) / (options.Max - options.Min), 0, 1, 0)
-            SliderFill.BackgroundColor3 = Nova.CurrentTheme.Accent
-            SliderFill.BorderSizePixel = 0
-            SliderFill.Parent = SliderBackground
-            
-            createCorner(SliderFill, 5)
-            
-            local SliderButton = Instance.new("TextButton")
-            SliderButton.Name = "SliderButton"
-            SliderButton.Size = UDim2.new(1, 0, 1, 0)
-            SliderButton.BackgroundTransparency = 1
-            SliderButton.Text = ""
-            SliderButton.Parent = SliderBackground
-            
-            local function updateSlider(input)
-                local sizeX = math.clamp((input.Position.X - SliderBackground.AbsolutePosition.X) / SliderBackground.AbsoluteSize.X, 0, 1)
-                SliderFill.Size = UDim2.new(sizeX, 0, 1, 0)
-                
-                local value = math.floor((options.Min + ((options.Max - options.Min) * sizeX)) / options.Increment + 0.5) * options.Increment
-                value = math.clamp(value, options.Min, options.Max)
-                
-                SliderLabel.Text = options.Name .. ": " .. value .. (options.Suffix or "")
-                sliderValue = value
-                options.Callback(value)
+        -- Tab button click handler
+        TabButton.MouseButton1Click:Connect(function()
+            -- Hide all tabs
+            for _, tab in pairs(Window.Tabs) do
+                tab.Button.BackgroundColor3 = Library.Theme.Element
+                if tab.Icon then
+                    tab.Icon.ImageColor3 = Library.Theme.Text
+                end
+                tab.Content.Visible = false
             end
             
-            SliderButton.MouseButton1Down:Connect(function(input)
-                updateSlider(input)
-                local connection
-                connection = UserInputService.InputChanged:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseMovement then
-                        updateSlider(input)
+            -- Show selected tab
+            TabButton.BackgroundColor3 = Library.Theme.Accent
+            if TabIcon then
+                TabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            TabContent.Visible = true
+            Window.CurrentTab = Tab
+        end)
+        
+        -- Tab hover effects
+        TabButton.MouseEnter:Connect(function()
+            if TabContent.Visible then return end
+            tween(TabButton, {BackgroundColor3 = Library.Theme.DarkAccent}, 0.2)
+        end)
+        
+        TabButton.MouseLeave:Connect(function()
+            if TabContent.Visible then return end
+            tween(TabButton, {BackgroundColor3 = Library.Theme.Element}, 0.2)
+        end)
+        
+        -- Store tab references
+        Tab.Button = TabButton
+        Tab.Icon = TabIcon
+        Tab.Content = TabContent
+        
+        -- Create Section function
+        function Tab:CreateSection(name)
+            local Section = {}
+            
+            local SectionFrame = Instance.new("Frame")
+            SectionFrame.Name = name .. "Section"
+            SectionFrame.Size = UDim2.new(1, -10, 0, 36)
+            SectionFrame.BackgroundColor3 = Library.Theme.Section
+            SectionFrame.BorderSizePixel = 0
+            SectionFrame.AutomaticSize = Enum.AutomaticSize.Y
+            SectionFrame.Parent = TabContent
+            
+            createCorner(SectionFrame, 6)
+            createShadow(SectionFrame, 15, 0.5)
+            
+            local SectionTitle = Instance.new("TextLabel")
+            SectionTitle.Name = "Title"
+            SectionTitle.Size = UDim2.new(1, -20, 0, 26)
+            SectionTitle.Position = UDim2.new(0, 10, 0, 5)
+            SectionTitle.BackgroundTransparency = 1
+            SectionTitle.Text = name
+            SectionTitle.TextColor3 = Library.Theme.Text
+            SectionTitle.TextSize = 15
+            SectionTitle.Font = Enum.Font.GothamBold
+            SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+            SectionTitle.Parent = SectionFrame
+            
+            local SectionDivider = Instance.new("Frame")
+            SectionDivider.Name = "Divider"
+            SectionDivider.Size = UDim2.new(1, -20, 0, 1)
+            SectionDivider.Position = UDim2.new(0, 10, 0, 30)
+            SectionDivider.BackgroundColor3 = Library.Theme.Accent
+            SectionDivider.BorderSizePixel = 0
+            SectionDivider.Parent = SectionFrame
+            
+            local SectionContent = Instance.new("Frame")
+            SectionContent.Name = "Content"
+            SectionContent.Size = UDim2.new(1, 0, 0, 0)
+            SectionContent.Position = UDim2.new(0, 0, 0, 36)
+            SectionContent.BackgroundTransparency = 1
+            SectionContent.AutomaticSize = Enum.AutomaticSize.Y
+            SectionContent.Parent = SectionFrame
+            
+            local ContentList = Instance.new("UIListLayout")
+            ContentList.SortOrder = Enum.SortOrder.LayoutOrder
+            ContentList.Padding = UDim.new(0, 8)
+            ContentList.Parent = SectionContent
+            
+            local ContentPadding = Instance.new("UIPadding")
+            ContentPadding.PaddingTop = UDim.new(0, 5)
+            ContentPadding.PaddingLeft = UDim.new(0, 10)
+            ContentPadding.PaddingRight = UDim.new(0, 10)
+            ContentPadding.PaddingBottom = UDim.new(0, 10)
+            ContentPadding.Parent = SectionContent
+            
+            -- Update section size
+            ContentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                SectionContent.Size = UDim2.new(1, 0, 0, ContentList.AbsoluteContentSize.Y + 15)
+            end)
+            
+            -- Create Toggle function
+            function Section:AddToggle(options)
+                options = options or {}
+                options.Flag = options.Flag or (options.Text .. "Toggle")
+                options.Default = options.Default or false
+                
+                Library.Flags[options.Flag] = options.Default
+                
+                local Toggle = {}
+                Toggle.Value = options.Default
+                
+                local ToggleFrame = Instance.new("Frame")
+                ToggleFrame.Name = "Toggle"
+                ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
+                ToggleFrame.BackgroundTransparency = 1
+                ToggleFrame.Parent = SectionContent
+                
+                local ToggleButton = Instance.new("TextButton")
+                ToggleButton.Name = "Button"
+                ToggleButton.Size = UDim2.new(0, 24, 0, 24)
+                ToggleButton.Position = UDim2.new(0, 0, 0.5, -12)
+                ToggleButton.BackgroundColor3 = Toggle.Value and Library.Theme.Accent or Library.Theme.Element
+                ToggleButton.BorderSizePixel = 0
+                ToggleButton.Text = ""
+                ToggleButton.AutoButtonColor = false
+                ToggleButton.Parent = ToggleFrame
+                
+                createCorner(ToggleButton, 4)
+                
+                local ToggleInner = Instance.new("Frame")
+                ToggleInner.Name = "Inner"
+                ToggleInner.Size = UDim2.new(0, 18, 0, 18)
+                ToggleInner.Position = UDim2.new(0.5, -9, 0.5, -9)
+                ToggleInner.BackgroundColor3 = Library.Theme.Text
+                ToggleInner.BackgroundTransparency = Toggle.Value and 0 or 1
+                ToggleInner.BorderSizePixel = 0
+                ToggleInner.Parent = ToggleButton
+                
+                createCorner(ToggleInner, 3)
+                
+                local ToggleText = Instance.new("TextLabel")
+                ToggleText.Name = "Text"
+                ToggleText.Size = UDim2.new(1, -30, 1, 0)
+                ToggleText.Position = UDim2.new(0, 30, 0, 0)
+                ToggleText.BackgroundTransparency = 1
+                ToggleText.Text = options.Text or "Toggle"
+                ToggleText.TextColor3 = Library.Theme.Text
+                ToggleText.TextSize = 14
+                ToggleText.Font = Enum.Font.Gotham
+                ToggleText.TextXAlignment = Enum.TextXAlignment.Left
+                ToggleText.Parent = ToggleFrame
+                
+                -- Toggle function
+                local function updateToggle()
+                    Toggle.Value = not Toggle.Value
+                    Library.Flags[options.Flag] = Toggle.Value
+                    
+                    tween(ToggleButton, {BackgroundColor3 = Toggle.Value and Library.Theme.Accent or Library.Theme.Element}, 0.2)
+                    tween(ToggleInner, {BackgroundTransparency = Toggle.Value and 0 or 1}, 0.2)
+                    
+                    if options.Callback then
+                        options.Callback(Toggle.Value)
+                    end
+                end
+                
+                ToggleButton.MouseButton1Click:Connect(updateToggle)
+                ToggleText.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        updateToggle()
                     end
                 end)
                 
-                UserInputService.InputEnded:Connect(function(input)
+                -- Return toggle object
+                function Toggle:Set(value)
+                    Toggle.Value = value
+                    Library.Flags[options.Flag] = Toggle.Value
+                    
+                    tween(ToggleButton, {BackgroundColor3 = Toggle.Value and Library.Theme.Accent or Library.Theme.Element}, 0.2)
+                    tween(ToggleInner, {BackgroundTransparency = Toggle.Value and 0 or 1}, 0.2)
+                    
+                    if options.Callback then
+                        options.Callback(Toggle.Value)
+                    end
+                end
+                
+                return Toggle
+            end
+            
+            -- Create Button function
+            function Section:AddButton(options)
+                options = options or {}
+                
+                local Button = {}
+                
+                local ButtonFrame = Instance.new("Frame")
+                ButtonFrame.Name = "Button"
+                ButtonFrame.Size = UDim2.new(1, 0, 0, 30)
+                ButtonFrame.BackgroundTransparency = 1
+                ButtonFrame.Parent = SectionContent
+                
+                local ButtonElement = Instance.new("TextButton")
+                ButtonElement.Name = "Element"
+                ButtonElement.Size = UDim2.new(1, 0, 1, 0)
+                ButtonElement.BackgroundColor3 = Library.Theme.Element
+                ButtonElement.BorderSizePixel = 0
+                ButtonElement.Text = options.Text or "Button"
+                ButtonElement.TextColor3 = Library.Theme.Text
+                ButtonElement.TextSize = 14
+                ButtonElement.Font = Enum.Font.Gotham
+                ButtonElement.AutoButtonColor = false
+                ButtonElement.Parent = ButtonFrame
+                
+                createCorner(ButtonElement, 4)
+                
+                -- Button effects
+                ButtonElement.MouseEnter:Connect(function()
+                    tween(ButtonElement, {BackgroundColor3 = Library.Theme.DarkAccent}, 0.2)
+                end)
+                
+                ButtonElement.MouseLeave:Connect(function()
+                    tween(ButtonElement, {BackgroundColor3 = Library.Theme.Element}, 0.2)
+                end)
+                
+                ButtonElement.MouseButton1Down:Connect(function()
+                    tween(ButtonElement, {BackgroundColor3 = Library.Theme.Accent}, 0.1)
+                end)
+                
+                ButtonElement.MouseButton1Up:Connect(function()
+                    tween(ButtonElement, {BackgroundColor3 = Library.Theme.DarkAccent}, 0.1)
+                end)
+                
+                ButtonElement.MouseButton1Click:Connect(function()
+                    if options.Callback then
+                        options.Callback()
+                    end
+                end)
+                
+                return Button
+            end
+            
+            -- Create Slider function
+            function Section:AddSlider(options)
+                options = options or {}
+                options.Flag = options.Flag or (options.Text .. "Slider")
+                options.Min = options.Min or 0
+                options.Max = options.Max or 100
+                options.Default = options.Default or options.Min
+                options.Increment = options.Increment or 1
+                
+                Library.Flags[options.Flag] = options.Default
+                
+                local Slider = {}
+                Slider.Value = options.Default
+                
+                local SliderFrame = Instance.new("Frame")
+                SliderFrame.Name = "Slider"
+                SliderFrame.Size = UDim2.new(1, 0, 0, 50)
+                SliderFrame.BackgroundTransparency = 1
+                SliderFrame.Parent = SectionContent
+                
+                local SliderText = Instance.new("TextLabel")
+                SliderText.Name = "Text"
+                SliderText.Size = UDim2.new(1, 0, 0, 20)
+                SliderText.BackgroundTransparency = 1
+                SliderText.Text = options.Text or "Slider"
+                SliderText.TextColor3 = Library.Theme.Text
+                SliderText.TextSize = 14
+                SliderText.Font = Enum.Font.Gotham
+                SliderText.TextXAlignment = Enum.TextXAlignment.Left
+                SliderText.Parent = SliderFrame
+                
+                local SliderValue = Instance.new("TextLabel")
+                SliderValue.Name = "Value"
+                SliderValue.Size = UDim2.new(0, 50, 0, 20)
+                SliderValue.Position = UDim2.new(1, -50, 0, 0)
+                SliderValue.BackgroundTransparency = 1
+                SliderValue.Text = tostring(Slider.Value) .. (options.Suffix or "")
+                SliderValue.TextColor3 = Library.Theme.Text
+                SliderValue.TextSize = 14
+                SliderValue.Font = Enum.Font.Gotham
+                SliderValue.TextXAlignment = Enum.TextXAlignment.Right
+                SliderValue.Parent = SliderFrame
+                
+                local SliderBackground = Instance.new("Frame")
+                SliderBackground.Name = "Background"
+                SliderBackground.Size = UDim2.new(1, 0, 0, 10)
+                SliderBackground.Position = UDim2.new(0, 0, 0, 25)
+                SliderBackground.BackgroundColor3 = Library.Theme.Element
+                SliderBackground.BorderSizePixel = 0
+                SliderBackground.Parent = SliderFrame
+                
+                createCorner(SliderBackground, 5)
+                
+                local SliderFill = Instance.new("Frame")
+                SliderFill.Name = "Fill"
+                SliderFill.Size = UDim2.new((Slider.Value - options.Min) / (options.Max - options.Min), 0, 1, 0)
+                SliderFill.BackgroundColor3 = Library.Theme.Accent
+                SliderFill.BorderSizePixel = 0
+                SliderFill.Parent = SliderBackground
+                
+                createCorner(SliderFill, 5)
+                
+                local SliderButton = Instance.new("TextButton")
+                SliderButton.Name = "Button"
+                SliderButton.Size = UDim2.new(1, 0, 1, 0)
+                SliderButton.BackgroundTransparency = 1
+                SliderButton.Text = ""
+                SliderButton.Parent = SliderBackground
+                
+                -- Slider functionality
+                local isDragging = false
+                
+                SliderButton.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                        if connection then
-                            connection:Disconnect()
+                        isDragging = true
+                    end
+                end)
+                
+                SliderButton.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        isDragging = false
+                    end
+                end)
+                
+                UserInputService.InputChanged:Connect(function(input)
+                    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                        local mousePos = UserInputService:GetMouseLocation()
+                        local relativePos = mousePos.X - SliderBackground.AbsolutePosition.X
+                        local percent = math.clamp(relativePos / SliderBackground.AbsoluteSize.X, 0, 1)
+                        
+                        local value = options.Min + ((options.Max - options.Min) * percent)
+                        value = math.floor(value / options.Increment + 0.5) * options.Increment
+                        value = math.clamp(value, options.Min, options.Max)
+                        
+                        Slider.Value = value
+                        Library.Flags[options.Flag] = value
+                        
+                        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                        SliderValue.Text = tostring(value) .. (options.Suffix or "")
+                        
+                        if options.Callback then
+                            options.Callback(value)
                         end
                     end
                 end)
-            end)
-            
-            -- Return slider object with value property
-            local slider = {
-                Value = sliderValue,
-                Instance = SliderContainer
-            }
-            
-            return slider
-        end
-        
-        -- Add dropdown function
-        function section:AddDropdown(options)
-            local dropdownValue = options.Default or options.Options[1]
-            local dropdownOpen = false
-            
-            local DropdownContainer = Instance.new("Frame")
-            DropdownContainer.Name = "Dropdown_" .. options.Name
-            DropdownContainer.Size = UDim2.new(1, 0, 0, 30)
-            DropdownContainer.BackgroundTransparency = 1
-            DropdownContainer.Parent = self.Container
-            
-            local DropdownLabel = Instance.new("TextLabel")
-            DropdownLabel.Name = "DropdownLabel"
-            DropdownLabel.Size = UDim2.new(1, 0, 0, 20)
-            DropdownLabel.BackgroundTransparency = 1
-            DropdownLabel.Text = options.Name
-            DropdownLabel.TextColor3 = Nova.CurrentTheme.Text
-            DropdownLabel.TextSize = 14
-            DropdownLabel.Font = Nova.Font
-            DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-            DropdownLabel.Parent = DropdownContainer
-            
-            local DropdownButton = Instance.new("TextButton")
-            DropdownButton.Name = "DropdownButton"
-            DropdownButton.Size = UDim2.new(1, 0, 0, 30)
-            DropdownButton.Position = UDim2.new(0, 0, 0, 20)
-            DropdownButton.BackgroundColor3 = Nova.CurrentTheme.Tertiary
-            DropdownButton.BorderSizePixel = 0
-            DropdownButton.Text = dropdownValue
-            DropdownButton.TextColor3 = Nova.CurrentTheme.Text
-            DropdownButton.TextSize = 14
-            DropdownButton.Font = Nova.Font
-            DropdownButton.Parent = DropdownContainer
-            
-            createCorner(DropdownButton, 6)
-            
-            local DropdownArrow = Instance.new("ImageLabel")
-            DropdownArrow.Name = "DropdownArrow"
-            DropdownArrow.Size = UDim2.new(0, 20, 0, 20)
-            DropdownArrow.Position = UDim2.new(1, -25, 0.5, -10)
-            DropdownArrow.BackgroundTransparency = 1
-            DropdownArrow.Image = "rbxassetid://6031091004"
-            DropdownArrow.ImageColor3 = Nova.CurrentTheme.Text
-            DropdownArrow.Parent = DropdownButton
-            
-            local DropdownMenu = Instance.new("Frame")
-            DropdownMenu.Name = "DropdownMenu"
-            DropdownMenu.Size = UDim2.new(1, 0, 0, 0)
-            DropdownMenu.Position = UDim2.new(0, 0, 1, 5)
-            DropdownMenu.BackgroundColor3 = Nova.CurrentTheme.Tertiary
-            DropdownMenu.BorderSizePixel = 0
-            DropdownMenu.ClipsDescendants = true
-            DropdownMenu.Visible = false
-            DropdownMenu.ZIndex = 5
-            DropdownMenu.Parent = DropdownButton
-            
-            createCorner(DropdownMenu, 6)
-            
-            local DropdownLayout = Instance.new("UIListLayout")
-            DropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            DropdownLayout.Padding = UDim.new(0, 5)
-            DropdownLayout.Parent = DropdownMenu
-            
-            local DropdownPadding = Instance.new("UIPadding")
-            DropdownPadding.PaddingTop = UDim.new(0, 5)
-            DropdownPadding.PaddingBottom = UDim.new(0, 5)
-            DropdownPadding.PaddingLeft = UDim.new(0, 5)
-            DropdownPadding.PaddingRight = UDim.new(0, 5)
-            DropdownPadding.Parent = DropdownMenu
-            
-            -- Create dropdown options
-            for _, option in ipairs(options.Options) do
-                local OptionButton = Instance.new("TextButton")
-                OptionButton.Name = "Option_" .. option
-                OptionButton.Size = UDim2.new(1, 0, 0, 25)
-                OptionButton.BackgroundColor3 = Nova.CurrentTheme.Secondary
-                OptionButton.BorderSizePixel = 0
-                OptionButton.Text = option
-                OptionButton.TextColor3 = Nova.CurrentTheme.Text
-                OptionButton.TextSize = 14
-                OptionButton.Font = Nova.Font
-                OptionButton.ZIndex = 6
-                OptionButton.Parent = DropdownMenu
                 
-                createCorner(OptionButton, 4)
-                
-                OptionButton.MouseEnter:Connect(function()
-                    tween(OptionButton, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Accent})
-                end)
-                
-                OptionButton.MouseLeave:Connect(function()
-                    tween(OptionButton, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Secondary})
-                end)
-                
-                OptionButton.MouseButton1Click:Connect(function()
-                    dropdownValue = option
-                    DropdownButton.Text = option
-                    options.Callback(option)
+                -- Return slider object
+                function Slider:Set(value)
+                    value = math.clamp(value, options.Min, options.Max)
+                    Slider.Value = value
+                    Library.Flags[options.Flag] = value
                     
-                    -- Close dropdown
-                    dropdownOpen = false
-                    tween(DropdownMenu, {Time = 0.2}, {Size = UDim2.new(1, 0, 0, 0)})
-                    wait(0.2)
-                    DropdownMenu.Visible = false
-                    tween(DropdownArrow, {Time = 0.2}, {Rotation = 0})
-                end)
+                    local percent = (value - options.Min) / (options.Max - options.Min)
+                    SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                    SliderValue.Text = tostring(value) .. (options.Suffix or "")
+                    
+                    if options.Callback then
+                        options.Callback(value)
+                    end
+                end
+                
+                return Slider
             end
             
-            -- Toggle dropdown
-            DropdownButton.MouseButton1Click:Connect(function()
-                dropdownOpen = not dropdownOpen
+            -- Create Dropdown function
+            function Section:AddDropdown(options)
+                options = options or {}
+                options.Flag = options.Flag or (options.Text .. "Dropdown")
+                options.Default = options.Default or options.Options[1]
+                options.Options = options.Options or {}
                 
-                if dropdownOpen then
-                    DropdownMenu.Visible = true
-                    tween(DropdownMenu, {Time = 0.2}, {Size = UDim2.new(1, 0, 0, DropdownLayout.AbsoluteContentSize.Y + 10)})
-                    tween(DropdownArrow, {Time = 0.2}, {Rotation = 180})
-                else
-                    tween(DropdownMenu, {Time = 0.2}, {Size = UDim2.new(1, 0, 0, 0)})
-                    wait(0.2)
-                    DropdownMenu.Visible = false
-                    tween(DropdownArrow, {Time = 0.2}, {Rotation = 0})
-                end
-            end)
-            
-            -- Update dropdown size
-            DropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                if dropdownOpen then
-                    DropdownMenu.Size = UDim2.new(1, 0, 0, DropdownLayout.AbsoluteContentSize.Y + 10)
-                end
-            end)
-            
-            -- Return dropdown object with value property and refresh function
-            local dropdown = {
-                Value = dropdownValue,
-                Instance = DropdownContainer,
-                Refresh = function(self, newOptions, keepSelection)
+                Library.Flags[options.Flag] = options.Default
+                
+                local Dropdown = {}
+                Dropdown.Value = options.Default
+                Dropdown.Options = options.Options
+                Dropdown.Open = false
+                
+                local DropdownFrame = Instance.new("Frame")
+                DropdownFrame.Name = "Dropdown"
+                DropdownFrame.Size = UDim2.new(1, 0, 0, 40)
+                DropdownFrame.BackgroundTransparency = 1
+                DropdownFrame.Parent = SectionContent
+                
+                local DropdownText = Instance.new("TextLabel")
+                DropdownText.Name = "Text"
+                DropdownText.Size = UDim2.new(1, 0, 0, 20)
+                DropdownText.BackgroundTransparency = 1
+                DropdownText.Text = options.Text or "Dropdown"
+                DropdownText.TextColor3 = Library.Theme.Text
+                DropdownText.TextSize = 14
+                DropdownText.Font = Enum.Font.Gotham
+                DropdownText.TextXAlignment = Enum.TextXAlignment.Left
+                DropdownText.Parent = DropdownFrame
+                
+                local DropdownButton = Instance.new("TextButton")
+                DropdownButton.Name = "Button"
+                DropdownButton.Size = UDim2.new(1, 0, 0, 20)
+                DropdownButton.Position = UDim2.new(0, 0, 0, 20)
+                DropdownButton.BackgroundColor3 = Library.Theme.Element
+                DropdownButton.BorderSizePixel = 0
+                DropdownButton.Text = Dropdown.Value
+                DropdownButton.TextColor3 = Library.Theme.Text
+                DropdownButton.TextSize = 14
+                DropdownButton.Font = Enum.Font.Gotham
+                DropdownButton.Parent = DropdownFrame
+                
+                createCorner(DropdownButton, 4)
+                
+                local DropdownIcon = Instance.new("ImageLabel")
+                DropdownIcon.Name = "Icon"
+                DropdownIcon.Size = UDim2.new(0, 20, 0, 20)
+                DropdownIcon.Position = UDim2.new(1, -25, 0, 0)
+                DropdownIcon.BackgroundTransparency = 1
+                DropdownIcon.Image = "rbxassetid://6031091004"
+                DropdownIcon.ImageColor3 = Library.Theme.Text
+                DropdownIcon.Parent = DropdownButton
+                
+                local DropdownContainer = Instance.new("Frame")
+                DropdownContainer.Name = "Container"
+                DropdownContainer.Size = UDim2.new(1, 0, 0, 0)
+                DropdownContainer.Position = UDim2.new(0, 0, 1, 0)
+                DropdownContainer.BackgroundColor3 = Library.Theme.Element
+                DropdownContainer.BorderSizePixel = 0
+                DropdownContainer.ClipsDescendants = true
+                DropdownContainer.Visible = false
+                DropdownContainer.Parent = DropdownButton
+                
+                createCorner(DropdownContainer, 4)
+                
+                local DropdownList = Instance.new("UIListLayout")
+                DropdownList.SortOrder = Enum.SortOrder.LayoutOrder
+                DropdownList.Padding = UDim.new(0, 5)
+                DropdownList.Parent = DropdownContainer
+                
+                local DropdownPadding = Instance.new("UIPadding")
+                DropdownPadding.PaddingTop = UDim.new(0, 5)
+                DropdownPadding.PaddingBottom = UDim.new(0, 5)
+                DropdownPadding.PaddingLeft = UDim.new(0, 5)
+                DropdownPadding.PaddingRight = UDim.new(0, 5)
+                DropdownPadding.Parent = DropdownContainer
+                
+                -- Create dropdown options
+                local function createOptions()
                     -- Clear existing options
-                    for _, child in ipairs(DropdownMenu:GetChildren()) do
+                    for _, child in pairs(DropdownContainer:GetChildren()) do
                         if child:IsA("TextButton") then
                             child:Destroy()
                         end
                     end
                     
-                    -- Update options
-                    for _, option in ipairs(newOptions) do
+                    -- Create new options
+                    for _, option in pairs(Dropdown.Options) do
                         local OptionButton = Instance.new("TextButton")
-                        OptionButton.Name = "Option_" .. option
-                        OptionButton.Size = UDim2.new(1, 0, 0, 25)
-                        OptionButton.BackgroundColor3 = Nova.CurrentTheme.Secondary
+                        OptionButton.Name = option
+                        OptionButton.Size = UDim2.new(1, 0, 0, 20)
+                        OptionButton.BackgroundColor3 = Library.Theme.Section
                         OptionButton.BorderSizePixel = 0
                         OptionButton.Text = option
-                        OptionButton.TextColor3 = Nova.CurrentTheme.Text
+                        OptionButton.TextColor3 = Library.Theme.Text
                         OptionButton.TextSize = 14
-                        OptionButton.Font = Nova.Font
-                        OptionButton.ZIndex = 6
-                        OptionButton.Parent = DropdownMenu
+                        OptionButton.Font = Enum.Font.Gotham
+                        OptionButton.Parent = DropdownContainer
                         
                         createCorner(OptionButton, 4)
                         
+                        -- Option button effects
                         OptionButton.MouseEnter:Connect(function()
-                            tween(OptionButton, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Accent})
+                            tween(OptionButton, {BackgroundColor3 = Library.Theme.DarkAccent}, 0.2)
                         end)
                         
                         OptionButton.MouseLeave:Connect(function()
-                            tween(OptionButton, {Time = 0.2}, {BackgroundColor3 = Nova.CurrentTheme.Secondary})
+                            tween(OptionButton, {BackgroundColor3 = Library.Theme.Section}, 0.2)
                         end)
                         
                         OptionButton.MouseButton1Click:Connect(function()
-                            dropdownValue = option
+                            Dropdown.Value = option
+                            Library.Flags[options.Flag] = option
                             DropdownButton.Text = option
-                            options.Callback(option)
                             
                             -- Close dropdown
-                            dropdownOpen = false
-                            tween(DropdownMenu, {Time = 0.2}, {Size = UDim2.new(1, 0, 0, 0)})
+                            Dropdown.Open = false
+                            tween(DropdownContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+                            tween(DropdownIcon, {Rotation = 0}, 0.2)
                             wait(0.2)
-                            DropdownMenu.Visible = false
-                            tween(DropdownArrow, {Time = 0.2}, {Rotation = 0})
+                            DropdownContainer.Visible = false
+                            
+                            if options.Callback then
+                                options.Callback(option)
+                            end
                         end)
                     end
-                    
-                    -- Update dropdown value
-                    if not keepSelection or not table.find(newOptions, dropdownValue) then
-                        dropdownValue = newOptions[1]
-                        DropdownButton.Text = dropdownValue
-                    end
-                    
-                    options.Options = newOptions
                 end
-            }
+                
+                createOptions()
+                
+                -- Update dropdown container size
+                DropdownList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                    if Dropdown.Open then
+                        DropdownContainer.Size = UDim2.new(1, 0, 0, DropdownList.AbsoluteContentSize.Y + 10)
+                    end
+                end)
+                
+                -- Toggle dropdown
+                DropdownButton.MouseButton1Click:Connect(function()
+                    Dropdown.Open = not Dropdown.Open
+                    
+                    if Dropdown.Open then
+                        DropdownContainer.Visible = true
+                        tween(DropdownContainer, {Size = UDim2.new(1, 0, 0, DropdownList.AbsoluteContentSize.Y + 10)}, 0.2)
+                        tween(DropdownIcon, {Rotation = 180}, 0.2)
+                    else
+                        tween(DropdownContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+                        tween(DropdownIcon, {Rotation = 0}, 0.2)
+                        wait(0.2)
+                        DropdownContainer.Visible = false
+                    end
+                end)
+                
+                -- Return dropdown object
+                function Dropdown:Set(value)
+                    if table.find(Dropdown.Options, value) then
+                        Dropdown.Value = value
+                        Library.Flags[options.Flag] = value
+                        DropdownButton.Text = value
+                        
+                        if options.Callback then
+                            options.Callback(value)
+                        end
+                    end
+                end
+                
+                function Dropdown:Refresh(newOptions, keepSelection)
+                    Dropdown.Options = newOptions
+                    
+                    -- Update options
+                    createOptions()
+                    
+                    -- Update selection
+                    if not keepSelection or not table.find(newOptions, Dropdown.Value) then
+                        Dropdown.Value = newOptions[1]
+                        Library.Flags[options.Flag] = newOptions[1]
+                        DropdownButton.Text = newOptions[1]
+                    end
+                end
+                
+                return Dropdown
+            end
             
-            return dropdown
+            -- Add section to tab
+            table.insert(Tab.Sections, Section)
+            
+            return Section
         end
         
-        -- Add section to tab
-        table.insert(tab.Sections, section)
+        -- Add tab to window
+        table.insert(Window.Tabs, Tab)
         
-        return section
+        -- Select first tab
+        if #Window.Tabs == 1 then
+            TabButton.BackgroundColor3 = Library.Theme.Accent
+            if TabIcon then
+                TabIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            TabContent.Visible = true
+            Window.CurrentTab = Tab
+        end
+        
+        return Tab
     end
     
-    -- Add tab to tabs table
-    table.insert(self.Tabs, tab)
+    -- Animate window
+    MainFrame.Position = UDim2.new(0.5, -(options.Width or 650)/2, 1.5, 0)
+    tween(MainFrame, {Position = UDim2.new(0.5, -(options.Width or 650)/2, 0.5, -(options.Height or 450)/2)}, 0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
     
-    -- Select first tab
-    if #self.Tabs == 1 then
-        selectTab()
-    end
-    
-    -- Update canvas size
-    TabContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        TabContent.CanvasSize = UDim2.new(0, 0, 0, TabContentLayout.AbsoluteContentSize.Y + 20)
-    end)
-    
-    return tab
+    return Window
 end
 
--- Initialize Nova UI
-local Window = Nova:Init({
-    Name = "Murder Mystery 2",
-    Size = Vector2.new(650, 450),
-    Color = Color3.fromRGB(45, 45, 65)
-})
+-- Create notification function
+function Library:Notify(options)
+    options = options or {}
+    
+    local NotifFrame = Instance.new("Frame")
+    NotifFrame.Name = "Notification"
+    NotifFrame.Size = UDim2.new(0, 300, 0, 80)
+    NotifFrame.Position = UDim2.new(1, 10, 1, -90)
+    NotifFrame.BackgroundColor3 = Library.Theme.Section
+    NotifFrame.BorderSizePixel = 0
+    NotifFrame.Parent = ScreenGui
+    
+    createCorner(NotifFrame, 6)
+    createShadow(NotifFrame, 15, 0.5)
+    
+    local NotifTitle = Instance.new("TextLabel")
+    NotifTitle.Name = "Title"
+    NotifTitle.Size = UDim2.new(1, -20, 0, 30)
+    NotifTitle.Position = UDim2.new(0, 10, 0, 5)
+    NotifTitle.BackgroundTransparency = 1
+    NotifTitle.Text = options.Title or "Notification"
+    NotifTitle.TextColor3 = Library.Theme.Text
+    NotifTitle.TextSize = 16
+    NotifTitle.Font = Enum.Font.GothamBold
+    NotifTitle.TextXAlignment = Enum.TextXAlignment.Left
+    NotifTitle.Parent = NotifFrame
+    
+    local NotifText = Instance.new("TextLabel")
+    NotifText.Name = "Text"
+    NotifText.Size = UDim2.new(1, -20, 0, 40)
+    NotifText.Position = UDim2.new(0, 10, 0, 35)
+    NotifText.BackgroundTransparency = 1
+    NotifText.Text = options.Content or ""
+    NotifText.TextColor3 = Library.Theme.Text
+    NotifText.TextSize = 14
+    NotifText.Font = Enum.Font.Gotham
+    NotifText.TextXAlignment = Enum.TextXAlignment.Left
+    NotifText.TextWrapped = true
+    NotifText.Parent = NotifFrame
+    
+    -- Animate notification
+    tween(NotifFrame, {Position = UDim2.new(1, -310, 1, -90)}, 0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    
+    -- Remove notification after duration
+    wait(options.Duration or 3)
+    tween(NotifFrame, {Position = UDim2.new(1, 10, 1, -90)}, 0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+    wait(0.5)
+    NotifFrame:Destroy()
+end
 
 -- Role Detection System
 local RoleSystem = {
@@ -997,143 +1073,12 @@ local function createRoleESP(plr, role)
     end)
 end
 
-local function createItemESP(item, config)
-    local esp = Instance.new("BillboardGui")
-    esp.Name = "ItemESP"
-    esp.Size = UDim2.new(0, 200, 0, 50)
-    esp.AlwaysOnTop = true
-    esp.Parent = item
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundTransparency = 0.3
-    frame.BackgroundColor3 = config.color
-    frame.Parent = esp
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = frame
-
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = config.name
-    nameLabel.TextColor3 = Color3.new(1, 1, 1)
-    nameLabel.TextSize = 14
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.Parent = frame
-
-    local distanceLabel = Instance.new("TextLabel")
-    distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    distanceLabel.Position = UDim2.new(0, 0, 0.5, 0)
-    distanceLabel.BackgroundTransparency = 1
-    distanceLabel.TextColor3 = Color3.new(1, 1, 1)
-    distanceLabel.TextSize = 12
-    distanceLabel.Font = Enum.Font.GothamSemibold
-    distanceLabel.Parent = frame
-
-    -- Add Highlight
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = config.color
-    highlight.OutlineColor = Color3.new(1, 1, 1)
-    highlight.FillTransparency = 0.5
-    highlight.Parent = item
-
-    -- Update distance using a unique identifier
-    local uniqueId = tostring(item:GetFullName())
-    RunService:BindToRenderStep("UpdateDistance_" .. uniqueId, 1, function()
-        if not item.Parent then
-            RunService:UnbindFromRenderStep("UpdateDistance_" .. uniqueId)
-            return
-        end
-        local distance = (item.Position - player.Character.HumanoidRootPart.Position).Magnitude
-        distanceLabel.Text = string.format("%.1f studs", distance)
-    end)
-end
-
-local function detectRoles()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character then
-            if plr.Character:FindFirstChild("Knife") then
-                RoleSystem.murderer = plr
-            elseif plr.Character:FindFirstChild("Gun") then
-                RoleSystem.sheriff = plr
-            else
-                table.insert(RoleSystem.innocent, plr)
-            end
-        end
-    end
-end
-
-local function getClosestPlayerToMouse()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character and plr.Character:FindFirstChild(SilentAim.targetPart) then
-            local role = "Innocent"
-            if plr.Character:FindFirstChild("Knife") then
-                role = "Murderer"
-            elseif plr.Character:FindFirstChild("Gun") then
-                role = "Sheriff"
-            end
-            
-            if (role == "Murderer" and SilentAim.targetMurderer) or
-               (role == "Sheriff" and SilentAim.targetSheriff) or
-               (role == "Innocent" and SilentAim.targetInnocent) then
-                
-                local targetPart = plr.Character[SilentAim.targetPart]
-                local pos = camera:WorldToViewportPoint(targetPart.Position)
-                local distance = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
-                
-                if distance < SilentAim.fovSize then
-                    local ray = Ray.new(camera.CFrame.Position, targetPart.Position - camera.CFrame.Position)
-                    local hit = workspace:FindPartOnRayWithIgnoreList(ray, {character, targetPart.Parent})
-                    
-                    if not hit then
-                        if distance < shortestDistance then
-                            closestPlayer = plr
-                            shortestDistance = distance
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    return closestPlayer
-end
-
-local function getCurrentMap()
-    local maps = workspace:FindFirstChild("Maps")
-    if not maps then return nil end
-    
-    for _, map in pairs(maps:GetChildren()) do
-        if map:IsA("Model") and map.Parent.Name == "Maps" then
-            local spawns = map:FindFirstChild("SpawnPoints")
-            if spawns then
-                return map
-            end
-        end
-    end
-    return nil
-end
-
-local function findSafeSpot(map)
-    if not map then return nil end
-    
-    local spawns = map:FindFirstChild("SpawnPoints")
-    if spawns and #spawns:GetChildren() > 0 then
-        return spawns:GetChildren()[1]
-    end
-    
-    local safeSpots = map:FindFirstChild("PlayerSpawn")
-    if safeSpots then
-        return safeSpots
-    end
-    
-    return map:FindFirstChild("Lobby") or map.PrimaryPart
-end
+-- Create Main Window
+local Window = Library:CreateWindow({
+    Title = "Murder Mystery 2",
+    Width = 650,
+    Height = 450
+})
 
 -- Create Tabs
 local MainTab = Window:CreateTab("Main", "rbxassetid://7733674079")
@@ -1146,27 +1091,30 @@ local MiscTab = Window:CreateTab("Misc", "rbxassetid://7734042071")
 -- Main Tab
 local RoleSection = MainTab:CreateSection("Role Detection")
 
-local RoleESPToggle = RoleSection:AddToggle({
-    Name = "Enable Role ESP",
+RoleSection:AddToggle({
+    Text = "Enable Role ESP",
     Default = false,
+    Flag = "RoleESP",
     Callback = function(Value)
         RoleSystem.enabled = Value
         
         if Value then
-            detectRoles()
-            
+            -- Initial ESP Setup
             for _, plr in pairs(Players:GetPlayers()) do
                 if plr ~= player then
                     local role = "Innocent"
-                    if plr == RoleSystem.murderer then
-                        role = "Murderer"
-                    elseif plr == RoleSystem.sheriff then
-                        role = "Sheriff"
+                    if plr.Character then
+                        if plr.Character:FindFirstChild("Knife") then
+                            role = "Murderer"
+                        elseif plr.Character:FindFirstChild("Gun") then
+                            role = "Sheriff"
+                        end
                     end
                     createRoleESP(plr, role)
                 end
             end
             
+            -- Update ESP
             RunService:BindToRenderStep("RoleESP", 1, function()
                 for _, plr in pairs(Players:GetPlayers()) do
                     if plr ~= player and plr.Character then
@@ -1197,7 +1145,371 @@ local RoleESPToggle = RoleSection:AddToggle({
     end
 })
 
-[Rest of the code continues with all the sections and features as shown in the previous messages...]
+RoleSection:AddButton({
+    Text = "Detect Roles",
+    Callback = function()
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= player and plr.Character then
+                if plr.Character:FindFirstChild("Knife") then
+                    RoleSystem.murderer = plr
+                elseif plr.Character:FindFirstChild("Gun") then
+                    RoleSystem.sheriff = plr
+                else
+                    table.insert(RoleSystem.innocent, plr)
+                end
+            end
+        end
+        
+        Library:Notify({
+            Title = "Roles Detected",
+            Content = "Murderer: " .. (RoleSystem.murderer and RoleSystem.murderer.Name or "Unknown") .. "\nSheriff: " .. (RoleSystem.sheriff and RoleSystem.sheriff.Name or "Unknown"),
+            Duration = 5
+        })
+    end
+})
+
+-- Combat Tab
+local SilentAimSection = CombatTab:CreateSection("Silent Aim")
+
+SilentAimSection:AddToggle({
+    Text = "Enable Silent Aim",
+    Default = false,
+    Flag = "SilentAim",
+    Callback = function(Value)
+        SilentAim.enabled = Value
+        fovCircle.Visible = Value and SilentAim.showFOV
+
+        if Value then
+            RunService:BindToRenderStep("SilentAim", 1, function()
+                fovCircle.Position = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)
+                
+                local closestPlayer = nil
+                local shortestDistance = math.huge
+                
+                for _, plr in pairs(Players:GetPlayers()) do
+                    if plr ~= player and plr.Character and plr.Character:FindFirstChild(SilentAim.targetPart) then
+                        local targetPart = plr.Character[SilentAim.targetPart]
+                        local pos = camera:WorldToViewportPoint(targetPart.Position)
+                        local distance = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)).Magnitude
+                        
+                        if distance < SilentAim.fovSize then
+                            local ray = Ray.new(camera.CFrame.Position, targetPart.Position - camera.CFrame.Position)
+                            local hit = workspace:FindPartOnRayWithIgnoreList(ray, {character, targetPart.Parent})
+                            
+                            if not hit then
+                                if distance < shortestDistance then
+                                    closestPlayer = plr
+                                    shortestDistance = distance
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                if closestPlayer then
+                    local targetPart = closestPlayer.Character[SilentAim.targetPart]
+                    local predictedPos = targetPart.Position + (targetPart.Velocity * SilentAim.prediction)
+                    
+                    local beam = Instance.new("Beam")
+                    beam.Transparency = NumberSequence.new(0.5)
+                    beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+                    beam.FaceCamera = true
+                    beam.Width0 = 0.1
+                    beam.Width1 = 0.1
+                    beam.Parent = workspace
+                    
+                    local attachment1 = Instance.new("Attachment")
+                    attachment1.Parent = workspace.Terrain
+                    
+                    local attachment2 = Instance.new("Attachment")
+                    attachment2.WorldPosition = predictedPos
+                    attachment2.Parent = workspace.Terrain
+                    
+                    beam.Attachment0 = attachment1
+                    beam.Attachment1 = attachment2
+                    
+                    game:GetService("Debris"):AddItem(beam, 0.05)
+                    game:GetService("Debris"):AddItem(attachment1, 0.05)
+                    game:GetService("Debris"):AddItem(attachment2, 0.05)
+                end
+            end)
+            
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local args = {...}
+                local method = getnamecallmethod()
+                
+                if method == "FireServer" and self.Name == "ShootGun" and SilentAim.enabled then
+                    local closestPlayer = getClosestPlayer()
+                    if closestPlayer then
+                        local targetPart = closestPlayer.Character[SilentAim.targetPart]
+                        args[1] = targetPart.Position + (targetPart.Velocity * SilentAim.prediction)
+                    end
+                end
+                
+                return oldNamecall(self, unpack(args))
+            end)
+        else
+            RunService:UnbindFromRenderStep("SilentAim")
+        end
+    end
+})
+
+SilentAimSection:AddToggle({
+    Text = "Show FOV",
+    Default = false,
+    Flag = "ShowFOV",
+    Callback = function(Value)
+        SilentAim.showFOV = Value
+        fovCircle.Visible = SilentAim.enabled and Value
+    end
+})
+
+SilentAimSection:AddSlider({
+    Text = "FOV Size",
+    Min = 50,
+    Max = 800,
+    Default = 400,
+    Increment = 10,
+    Flag = "FOVSize",
+    Callback = function(Value)
+        SilentAim.fovSize = Value
+        fovCircle.Radius = Value
+    end
+})
+
+SilentAimSection:AddSlider({
+    Text = "Prediction",
+    Min = 0.1,
+    Max = 0.3,
+    Default = 0.165,
+    Increment = 0.005,
+    Flag = "Prediction",
+    Callback = function(Value)
+        SilentAim.prediction = Value
+    end
+})
+
+-- Target Selection Section
+local TargetSection = CombatTab:CreateSection("Target Selection")
+
+TargetSection:AddToggle({
+    Text = "Target Murderer",
+    Default = true,
+    Flag = "TargetMurderer",
+    Callback = function(Value)
+        SilentAim.targetMurderer = Value
+    end
+})
+
+TargetSection:AddToggle({
+    Text = "Target Sheriff",
+    Default = false,
+    Flag = "TargetSheriff",
+    Callback = function(Value)
+        SilentAim.targetSheriff = Value
+    end
+})
+
+TargetSection:AddToggle({
+    Text = "Target Innocent",
+    Default = false,
+    Flag = "TargetInnocent",
+    Callback = function(Value)
+        SilentAim.targetInnocent = Value
+    end
+})
+
+-- Auto Kill Section
+local AutoKillSection = CombatTab:CreateSection("Auto Kill")
+
+AutoKillSection:AddToggle({
+    Text = "Auto Kill Murderer",
+    Default = false,
+    Flag = "AutoKillMurderer",
+    Callback = function(Value)
+        if Value then
+            RunService:BindToRenderStep("AutoKillMurderer", 1, function()
+                if RoleSystem.murderer and player.Character:FindFirstChild("Gun") then
+                    local targetPart = RoleSystem.murderer.Character:FindFirstChild("Head")
+                    if targetPart then
+                        local args = {
+                            [1] = targetPart.Position
+                        }
+                        ReplicatedStorage.ShootGun:FireServer(unpack(args))
+                    end
+                end
+            end)
+        else
+            RunService:UnbindFromRenderStep("AutoKillMurderer")
+        end
+    end
+})
+
+-- ESP Tab
+local ItemESPSection = ESPTab:CreateSection("Item ESP")
+
+ItemESPSection:AddToggle({
+    Text = "Gun ESP",
+    Default = false,
+    Flag = "GunESP",
+    Callback = function(Value)
+        if Value then
+            RunService:BindToRenderStep("GunESP", 1, function()
+                for _, item in pairs(workspace:GetDescendants()) do
+                    if item:IsA("Tool") and item.Name == "Gun" then
+                        if not item:FindFirstChild("ItemESP") then
+                            createItemESP(item, {
+                                name = "Gun",
+                                color = Color3.fromRGB(0, 0, 255)
+                            })
+                        end
+                    end
+                end
+            end)
+        else
+            RunService:UnbindFromRenderStep("GunESP")
+            for _, item in pairs(workspace:GetDescendants()) do
+                if item:IsA("Tool") and item.Name == "Gun" then
+                    local esp = item:FindFirstChild("ItemESP")
+                    if esp then esp:Destroy() end
+                end
+            end
+        end
+    end
+})
+
+ItemESPSection:AddToggle({
+    Text = "Knife ESP",
+    Default = false,
+    Flag = "KnifeESP",
+    Callback = function(Value)
+        if Value then
+            RunService:BindToRenderStep("KnifeESP", 1, function()
+                for _, item in pairs(workspace:GetDescendants()) do
+                    if item:IsA("Tool") and item.Name == "Knife" then
+                        if not item:FindFirstChild("ItemESP") then
+                            createItemESP(item, {
+                                name = "Knife",
+                                color = Color3.fromRGB(255, 0, 0)
+                            })
+                        end
+                    end
+                end
+            end)
+        else
+            RunService:UnbindFromRenderStep("KnifeESP")
+            for _, item in pairs(workspace:GetDescendants()) do
+                if item:IsA("Tool") and item.Name == "Knife" then
+                    local esp = item:FindFirstChild("ItemESP")
+                    if esp then esp:Destroy() end
+                end
+            end
+        end
+    end
+})
+
+ItemESPSection:AddToggle({
+    Text = "Coin ESP",
+    Default = false,
+    Flag = "CoinESP",
+    Callback = function(Value)
+        if Value then
+            RunService:BindToRenderStep("CoinESP", 1, function()
+                for _, coin in pairs(workspace:GetDescendants()) do
+                    if coin.Name == "Coin" or coin.Name == "CoinContainer" then
+                        if not coin:FindFirstChild("ItemESP") then
+                            createItemESP(coin, {
+                                name = "Coin",
+                                color = Color3.fromRGB(255, 215, 0)
+                            })
+                        end
+                    end
+                end
+            end)
+        else
+            RunService:UnbindFromRenderStep("CoinESP")
+            for _, coin in pairs(workspace:GetDescendants()) do
+                if coin.Name == "Coin" or coin.Name == "CoinContainer" then
+                    local esp = coin:FindFirstChild("ItemESP")
+                    if esp then esp:Destroy() end
+                end
+            end
+        end
+    end
+})
+
+-- Player Tab
+local MovementSection = PlayerTab:CreateSection("Movement")
+
+MovementSection:AddSlider({
+    Text = "Walk Speed",
+    Min = 16,
+    Max = 500,
+    Default = 16,
+    Increment = 1,
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        if humanoid then
+            humanoid.WalkSpeed = Value
+        end
+    end
+})
+
+MovementSection:AddSlider({
+    Text = "Jump Power",
+    Min = 50,
+    Max = 500,
+    Default = 50,
+    Increment = 1,
+    Flag = "JumpPower",
+    Callback = function(Value)
+        if humanoid then
+            humanoid.JumpPower = Value
+        end
+    end
+})
+
+MovementSection:AddToggle({
+    Text = "Infinite Jump",
+    Default = false,
+    Flag = "InfiniteJump",
+    Callback = function(Value)
+        UserInputService.JumpRequest:Connect(function()
+            if Value and humanoid then
+                humanoid:ChangeState("Jumping")
+            end
+        end)
+    end
+})
+
+MovementSection:AddToggle({
+    Text = "Noclip",
+    Default = false,
+    Flag = "Noclip",
+    Callback = function(Value)
+        if Value then
+            RunService:BindToRenderStep("Noclip", 1, function()
+                if character then
+                    for _, part in pairs(character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+            RunService:UnbindFromRenderStep("Noclip")
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+})
 
 -- Character respawn handler
 player.CharacterAdded:Connect(function(newCharacter)
@@ -1206,18 +1518,16 @@ player.CharacterAdded:Connect(function(newCharacter)
     rootPart = character:WaitForChild("HumanoidRootPart")
     
     -- Restore settings
-    if WalkSpeedSlider.Value then
-        humanoid.WalkSpeed = WalkSpeedSlider.Value
+    if Library.Flags.WalkSpeed then
+        humanoid.WalkSpeed = Library.Flags.WalkSpeed
+    end
+    if Library.Flags.JumpPower then
+        humanoid.JumpPower = Library.Flags.JumpPower
     end
     
-    if JumpPowerSlider.Value then
-        humanoid.JumpPower = JumpPowerSlider.Value
-    end
-    
-    if RoleESPToggle.Value then
+    -- Update ESP
+    if Library.Flags.RoleESP then
         RunService:UnbindFromRenderStep("RoleESP")
-        detectRoles()
-        
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= player then
                 local role = "Innocent"
@@ -1232,50 +1542,9 @@ player.CharacterAdded:Connect(function(newCharacter)
     end
 end)
 
--- Create initial notification
-local notification = Instance.new("Frame")
-notification.Name = "Notification"
-notification.Size = UDim2.new(0, 300, 0, 100)
-notification.Position = UDim2.new(0.5, -150, 0.8, -50)
-notification.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-notification.BorderSizePixel = 0
-notification.Parent = player.PlayerGui:FindFirstChild("NovaNotifications") or Instance.new("ScreenGui", player.PlayerGui)
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = notification
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "Script Loaded"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.Parent = notification
-
-local content = Instance.new("TextLabel")
-content.Size = UDim2.new(1, 0, 1, -30)
-content.Position = UDim2.new(0, 0, 0, 30)
-content.BackgroundTransparency = 1
-content.Text = "Murder Mystery 2 script has been loaded successfully!"
-content.TextColor3 = Color3.fromRGB(200, 200, 200)
-content.TextSize = 14
-content.Font = Enum.Font.Gotham
-content.Parent = notification
-
--- Animate notification
-notification.Position = UDim2.new(0.5, -150, 1.1, -50)
-TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-    Position = UDim2.new(0.5, -150, 0.8, -50)
-}):Play()
-
--- Remove notification after 5 seconds
-spawn(function()
-    wait(5)
-    TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-        Position = UDim2.new(0.5, -150, 1.1, -50)
-    }):Play()
-    wait(0.5)
-    notification:Destroy()
-end)
+-- Initial notification
+Library:Notify({
+    Title = "Script Loaded",
+    Content = "Murder Mystery 2 script has been loaded successfully!",
+    Duration = 5
+})
