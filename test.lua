@@ -1,12 +1,3 @@
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
-local SolarisLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/sol"))()
-
-local Window = SolarisLib:New({
-    Name = "Murder Mystery 2 Ultimate",
-    FolderToSave = "MM2UltimateSave",
-    Dark = true
-})
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +10,14 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 local camera = workspace.CurrentCamera
+
+local SolarisLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/sol"))()
+
+local Window = SolarisLib:New({
+    Name = "Murder Mystery 2 Ultimate",
+    FolderToSave = "MM2UltimateSave",
+    Dark = true
+})
 
 local RoleSystem = {
     murderer = nil,
@@ -179,9 +178,9 @@ local function createItemESP(item, config)
     highlight.FillTransparency = 0.5
     highlight.Parent = item
 
-    RunService:BindToRenderStep("UpdateDistance_" .. item:GetDebugId(), 1, function()
+    RunService:BindToRenderStep("UpdateDistance_" .. tostring(item:GetFullName()), 1, function()
         if not item.Parent then
-            RunService:UnbindFromRenderStep("UpdateDistance_" .. item:GetDebugId())
+            RunService:UnbindFromRenderStep("UpdateDistance_" .. tostring(item:GetFullName()))
             return
         end
         local distance = (item.Position - player.Character.HumanoidRootPart.Position).Magnitude
@@ -360,7 +359,7 @@ CombatTab:Toggle("Enable Silent Aim", false, "SilentAimToggle", function(value)
                 beam.Parent = workspace
                 
                 local attachment1 = Instance.new("Attachment")
-                attachment1.Parent = camera.CFrame
+                attachment1.Parent = workspace.Terrain
                 
                 local attachment2 = Instance.new("Attachment")
                 attachment2.WorldPosition = predictedPos
@@ -372,20 +371,23 @@ CombatTab:Toggle("Enable Silent Aim", false, "SilentAimToggle", function(value)
                 game:GetService("Debris"):AddItem(beam, 0.05)
                 game:GetService("Debris"):AddItem(attachment1, 0.05)
                 game:GetService("Debris"):AddItem(attachment2, 0.05)
-                
-                local oldNamecall
-                oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-                    local args = {...}
-                    local method = getnamecallmethod()
-                    
-                    if method == "FireServer" and self.Name == "ShootGun" and SilentAim.enabled then
-                        args[1] = predictedPos
-                        return oldNamecall(self, unpack(args))
-                    end
-                    
-                    return oldNamecall(self, ...)
-                end)
             end
+        end)
+        
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local args = {...}
+            local method = getnamecallmethod()
+            
+            if method == "FireServer" and self.Name == "ShootGun" and SilentAim.enabled then
+                local closestPlayer = getClosestPlayerToMouse()
+                if closestPlayer then
+                    local targetPart = closestPlayer.Character[SilentAim.targetPart]
+                    args[1] = targetPart.Position + (targetPart.Velocity * SilentAim.prediction)
+                end
+            end
+            
+            return oldNamecall(self, unpack(args))
         end)
     else
         RunService:UnbindFromRenderStep("SilentAim")
@@ -757,15 +759,15 @@ player.CharacterAdded:Connect(function(newCharacter)
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
     
-    if SolarisLib.Flags["WalkSpeedSlider"].Value then
+    if SolarisLib.Flags["WalkSpeedSlider"] and SolarisLib.Flags["WalkSpeedSlider"].Value then
         humanoid.WalkSpeed = SolarisLib.Flags["WalkSpeedSlider"].Value
     end
     
-    if SolarisLib.Flags["JumpPowerSlider"].Value then
+    if SolarisLib.Flags["JumpPowerSlider"] and SolarisLib.Flags["JumpPowerSlider"].Value then
         humanoid.JumpPower = SolarisLib.Flags["JumpPowerSlider"].Value
     end
     
-    if SolarisLib.Flags["RoleESPToggle"].Value then
+    if SolarisLib.Flags["RoleESPToggle"] and SolarisLib.Flags["RoleESPToggle"].Value then
         RunService:UnbindFromRenderStep("RoleESP")
         detectRoles()
         
