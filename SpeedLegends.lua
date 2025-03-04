@@ -1,5 +1,12 @@
--- Carregar a Rayfield Library
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Carregar Rayfield Library (Correção)
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
+if not success then
+    warn("Erro ao carregar Rayfield UI. Verifique sua conexão.")
+    return
+end
 
 -- Criar a Janela do Menu
 local Window = Rayfield:CreateWindow({
@@ -31,39 +38,39 @@ end
 BypassAnticheat()
 
 -- TAB PRINCIPAL
-local MainTab = Window:CreateTab("Principal", 4483362458)
+local MainTab = Window:CreateTab("🏆 Principal")
 
 -- ✅ Auto-Farm Totalmente Automático
 MainTab:CreateToggle({
-    Name = "Auto-Farm (Ganha Velocidade Ilimitada)",
+    Name = "🏃 Auto-Farm (Ganha Velocidade Ilimitada)",
     CurrentValue = false,
     Flag = "AutoFarm",
     Callback = function(Value)
         getgenv().AutoFarm = Value
         while getgenv().AutoFarm do
             game:GetService("ReplicatedStorage").Events.GainSpeed:FireServer(200) -- Ajustável
-            wait(0.2)
+            task.wait(0.2)
         end
     end
 })
 
 -- ✅ Auto-Rebirth Inteligente
 MainTab:CreateToggle({
-    Name = "Auto-Rebirth Inteligente",
+    Name = "🔁 Auto-Rebirth Inteligente",
     CurrentValue = false,
     Flag = "AutoRebirth",
     Callback = function(Value)
         getgenv().AutoRebirth = Value
         while getgenv().AutoRebirth do
             game:GetService("ReplicatedStorage").Events.Rebirth:FireServer()
-            wait(5)
+            task.wait(5)
         end
     end
 })
 
 -- ✅ Auto-Coletar Orbs, Anéis e Boosts
 MainTab:CreateToggle({
-    Name = "Auto-Coletar Orbs, Anéis e Boosts",
+    Name = "💎 Auto-Coletar Orbs & Boosts",
     CurrentValue = false,
     Flag = "AutoCollect",
     Callback = function(Value)
@@ -72,7 +79,7 @@ MainTab:CreateToggle({
             for _, item in pairs(game:GetService("Workspace"):GetChildren()) do
                 if item:IsA("Model") and item:FindFirstChild("TouchInterest") then
                     player.Character.HumanoidRootPart.CFrame = item.CFrame
-                    wait(0.1)
+                    task.wait(0.1)
                 end
             end
         end
@@ -81,7 +88,7 @@ MainTab:CreateToggle({
 
 -- ✅ Auto-Corrida PRO (Garante Vitórias)
 MainTab:CreateToggle({
-    Name = "Auto-Corrida PRO (Sempre Ganha)",
+    Name = "🏁 Auto-Corrida (Vence Sempre)",
     CurrentValue = false,
     Flag = "AutoRace",
     Callback = function(Value)
@@ -90,30 +97,16 @@ MainTab:CreateToggle({
             for _, race in pairs(game:GetService("Workspace").Races:GetChildren()) do
                 if race:IsA("Model") and race:FindFirstChild("TouchInterest") then
                     player.Character.HumanoidRootPart.CFrame = race.CFrame
-                    wait(0.3)
+                    task.wait(0.3)
                 end
             end
         end
     end
 })
 
--- ✅ Auto-Farm de Pets
-MainTab:CreateToggle({
-    Name = "Auto-Farm de Pets (Compra Automático)",
-    CurrentValue = false,
-    Flag = "AutoPets",
-    Callback = function(Value)
-        getgenv().AutoPets = Value
-        while getgenv().AutoPets do
-            game:GetService("ReplicatedStorage").Events.BuyEgg:FireServer("MelhorPet")
-            wait(3)
-        end
-    end
-})
-
--- ✅ Speed Hack Personalizável
+-- ✅ Velocidade Customizável
 MainTab:CreateSlider({
-    Name = "Definir Velocidade",
+    Name = "⚡ Ajustar Velocidade",
     Range = {16, 2000},
     Increment = 10,
     CurrentValue = 16,
@@ -125,56 +118,41 @@ MainTab:CreateSlider({
     end
 })
 
--- ✅ Super Salto e Modo Voo
-MainTab:CreateToggle({
-    Name = "Ativar Voo",
-    CurrentValue = false,
-    Flag = "FlyMode",
-    Callback = function(Value)
-        getgenv().FlyMode = Value
-        while getgenv().FlyMode do
-            player.Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0)
-            wait(0.1)
-        end
-    end
-})
-
 -- ✅ Teleportes Avançados
-local TeleportTab = Window:CreateTab("Teleportes", 4483362458)
+local TeleportTab = Window:CreateTab("🌍 Teleportes")
 
 TeleportTab:CreateButton({
-    Name = "Linha de Chegada (Auto-Win)",
+    Name = "🏁 Linha de Chegada (Auto-Win)",
     Callback = function()
         player.Character.HumanoidRootPart.CFrame = CFrame.new(1000, 50, 200) -- Ajustável
     end
 })
 
 TeleportTab:CreateButton({
-    Name = "Ir para Loja",
+    Name = "🛍️ Ir para Loja",
     Callback = function()
         player.Character.HumanoidRootPart.CFrame = CFrame.new(-50, 5, 300)
     end
 })
 
 TeleportTab:CreateButton({
-    Name = "Ir para Spawn",
+    Name = "🏠 Ir para Spawn",
     Callback = function()
         player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 5, 0)
     end
 })
 
 -- ✅ Bypass de Anticheat
-local SettingsTab = Window:CreateTab("Configurações", 4483362458)
+local SettingsTab = Window:CreateTab("⚙️ Configurações")
 
 SettingsTab:CreateButton({
-    Name = "Ativar Bypass de Anticheat",
+    Name = "🛡️ Ativar Bypass de Anticheat",
     Callback = function()
         BypassAnticheat()
         Rayfield:Notify({
             Title = "Anticheat Bypass",
             Content = "Anticheat desativado com sucesso!",
-            Duration = 3,
-            Image = 4483362458
+            Duration = 3
         })
     end
 })
